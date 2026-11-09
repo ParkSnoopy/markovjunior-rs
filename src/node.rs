@@ -5,7 +5,7 @@ use crate::{
     error::{ModelError, error},
     grid::Grid,
     path::PathNode,
-    rule::{Rule, apply_all, apply_one},
+    rule::{Rule, apply_all, apply_one, resolve_symmetry},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -34,9 +34,14 @@ pub enum Node {
 }
 
 impl Node {
-    pub(crate) fn load(xml: XmlNode<'_, '_>, grid: &Grid) -> Result<Self, ModelError> {
+    pub(crate) fn load(
+        xml: XmlNode<'_, '_>,
+        grid: &Grid,
+        parent_symmetry: [bool; 8],
+    ) -> Result<Self, ModelError> {
         match xml.tag_name().name() {
             "one" | "all" | "prl" => {
+                let node_symmetry = resolve_symmetry(xml.attribute("symmetry"), parent_symmetry)?;
                 let kind = match xml.tag_name().name() {
                     "one" => RuleKind::One,
                     "all" => RuleKind::All,
@@ -46,15 +51,17 @@ impl Node {
                     .children()
                     .filter(|child| child.has_tag_name("rule"))
                     .collect();
-                let base_rules = if rule_nodes.is_empty() {
-                    vec![Rule::load(xml, grid)?]
+                let rule_nodes = if rule_nodes.is_empty() {
+                    vec![xml]
                 } else {
                     rule_nodes
-                        .into_iter()
-                        .map(|rule| Rule::load(rule, grid))
-                        .collect::<Result<Vec<_>, _>>()?
                 };
-                let rules = base_rules.iter().flat_map(Rule::symmetries).collect();
+                let mut rules = Vec::new();
+                for rule_xml in rule_nodes {
+                    let rule = Rule::load(rule_xml, grid)?;
+                    let symmetry = resolve_symmetry(rule_xml.attribute("symmetry"), node_symmetry)?;
+                    rules.extend(rule.symmetries(symmetry));
+                }
                 let steps = xml
                     .attribute("steps")
                     .unwrap_or("0")
@@ -68,14 +75,16 @@ impl Node {
                 })
             }
             "sequence" => {
+                let symmetry = resolve_symmetry(xml.attribute("symmetry"), parent_symmetry)?;
                 Ok(Self::Sequence {
-                    children: load_children(xml, grid)?,
+                    children: load_children(xml, grid, symmetry)?,
                     next: 0,
                 })
             }
             "markov" => {
+                let symmetry = resolve_symmetry(xml.attribute("symmetry"), parent_symmetry)?;
                 Ok(Self::Markov {
-                    children: load_children(xml, grid)?,
+                    children: load_children(xml, grid, symmetry)?,
                 })
             }
             "path" => Ok(Self::Path(PathNode::load(xml, grid)?)),
@@ -123,7 +132,11 @@ impl Node {
     }
 }
 
-fn load_children(xml: XmlNode<'_, '_>, grid: &Grid) -> Result<Vec<Node>, ModelError> {
+fn load_children(
+    xml: XmlNode<'_, '_>,
+    grid: &Grid,
+    symmetry: [bool; 8],
+) -> Result<Vec<Node>, ModelError> {
     xml.children()
         .filter(|child| {
             matches!(
@@ -131,6 +144,6 @@ fn load_children(xml: XmlNode<'_, '_>, grid: &Grid) -> Result<Vec<Node>, ModelEr
                 "one" | "all" | "prl" | "sequence" | "markov" | "path"
             )
         })
-        .map(|child| Node::load(child, grid))
+        .map(|child| Node::load(child, grid, symmetry))
         .collect()
 }

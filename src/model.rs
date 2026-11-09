@@ -32,7 +32,7 @@ impl Model {
             .unwrap_or("false")
             .eq_ignore_ascii_case("true");
         let grid = Grid::new(width, height, values, origin)?;
-        let root_node = Node::load(root, &grid)?;
+        let root_node = Node::load(root, &grid, [true; 8])?;
         Ok(Self {
             grid,
             root: root_node,

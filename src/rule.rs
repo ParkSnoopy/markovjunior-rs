@@ -66,15 +66,18 @@ impl Rule {
         })
     }
 
-    pub(crate) fn symmetries(&self) -> Vec<Self> {
-        let mut result = vec![self.clone()];
+    pub fn symmetries(&self, subgroup: [bool; 8]) -> Vec<Self> {
+        let mut result = Vec::with_capacity(8);
         let mut rotated = self.clone();
-        for _ in 0..3 {
+        for rotation in 0..4 {
+            if subgroup[rotation * 2] {
+                push_unique(&mut result, rotated.clone());
+            }
+            if subgroup[rotation * 2 + 1] {
+                push_unique(&mut result, rotated.reflected());
+            }
             rotated = rotated.rotate();
-            push_unique(&mut result, rotated.clone());
-            push_unique(&mut result, rotated.reflected());
         }
-        push_unique(&mut result, self.reflected());
         result
     }
 
@@ -129,6 +132,21 @@ impl Rule {
                 }
             }
         }
+    }
+}
+
+pub fn resolve_symmetry(value: Option<&str>, parent: [bool; 8]) -> Result<[bool; 8], ModelError> {
+    let Some(value) = value else {
+        return Ok(parent);
+    };
+    match value {
+        "()" => Ok([true, false, false, false, false, false, false, false]),
+        "(x)" => Ok([true, true, false, false, false, false, false, false]),
+        "(y)" => Ok([true, false, false, false, false, true, false, false]),
+        "(x)(y)" => Ok([true, true, false, false, true, true, false, false]),
+        "(xy+)" => Ok([true, false, true, false, true, false, true, false]),
+        "(xy)" => Ok([true; 8]),
+        _ => Err(error(format!("unknown square symmetry '{value}'"))),
     }
 }
 

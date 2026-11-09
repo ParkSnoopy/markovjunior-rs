@@ -63,3 +63,56 @@ fn path_node_connects_a_start_to_a_reachable_goal() -> Result<(), Box<dyn std::e
     }
     Ok(())
 }
+
+#[test]
+fn branch_symmetry_limits_child_rule_orientations() -> Result<(), Box<dyn std::error::Error>> {
+    let xml =
+        "<sequence values='BW' origin='true' symmetry='()'><one in='WB' out='WW'/></sequence>";
+    let mut model = Model::from_xml(xml, 5, 5)?;
+    let mut rng = StdRng::seed_from_u64(7);
+
+    model.run(1, &mut rng);
+    let rows = model.grid().rows();
+
+    if rows[2] != "BBWWB" {
+        return Err(std::io::Error::other(format!(
+            "identity symmetry should grow right only, got {}",
+            rows[2]
+        ))
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn rule_symmetry_overrides_inherited_symmetry() -> Result<(), Box<dyn std::error::Error>> {
+    let xml = "<sequence values='BW' origin='true' symmetry='()'><one><rule in='WB' out='WW' symmetry='(x)'/></one></sequence>";
+    let mut model = Model::from_xml(xml, 5, 5)?;
+    let mut rng = StdRng::seed_from_u64(7);
+
+    model.run(1, &mut rng);
+    let rows = model.grid().rows();
+
+    if rows[2] != "BBWWB" && rows[2] != "BWWBB" {
+        return Err(std::io::Error::other(format!(
+            "horizontal reflection should grow horizontally, got {}",
+            rows[2]
+        ))
+        .into());
+    }
+    if rows
+        .iter()
+        .enumerate()
+        .any(|(y, row)| y != 2 && row != "BBBBB")
+    {
+        return Err(std::io::Error::other("horizontal symmetry changed another row").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn model_rejects_unknown_symmetry_groups() {
+    let result = Model::from_xml("<one values='BW' in='WB' out='WW' symmetry='(q)'/>", 5, 5);
+
+    assert!(result.is_err());
+}
