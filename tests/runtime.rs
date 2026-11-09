@@ -116,3 +116,32 @@ fn model_rejects_unknown_symmetry_groups() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn union_input_matches_each_member_symbol() -> Result<(), Box<dyn std::error::Error>> {
+    let xml = "<sequence values='BWG'><union symbol='X' values='BW'/><one in='X' out='G' steps='1'/></sequence>";
+    let mut model = Model::from_xml(xml, 4, 4)?;
+    let mut rng = StdRng::seed_from_u64(7);
+
+    let turns = model.run(10, &mut rng);
+    let greens = model.grid().rows().join("").matches('G').count();
+
+    if turns != 1 || greens != 1 {
+        return Err(std::io::Error::other(format!(
+            "expected one union rewrite, got {turns} turns and {greens} green cells"
+        ))
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn model_rejects_union_members_outside_grid_values() {
+    let result = Model::from_xml(
+        "<sequence values='BW'><union symbol='X' values='Q'/><one in='X' out='B'/></sequence>",
+        4,
+        4,
+    );
+
+    assert!(result.is_err());
+}

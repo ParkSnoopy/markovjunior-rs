@@ -8,7 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Rule {
-    input: Vec<char>,
+    input: Vec<u16>,
     output: Vec<Option<char>>,
     width: usize,
     height: usize,
@@ -33,7 +33,7 @@ impl Rule {
         if input_rows
             .iter()
             .flatten()
-            .any(|symbol| *symbol != '*' && !grid.indices.contains_key(symbol))
+            .any(|symbol| !grid.waves.contains_key(symbol))
             || output_rows
                 .iter()
                 .flatten()
@@ -43,7 +43,11 @@ impl Rule {
         }
         let width = input_rows[0].len();
         let height = input_rows.len();
-        let input = input_rows.into_iter().flatten().collect();
+        let input = input_rows
+            .into_iter()
+            .flatten()
+            .map(|symbol| grid.waves[&symbol])
+            .collect();
         let output = output_rows
             .into_iter()
             .flatten()
@@ -82,7 +86,7 @@ impl Rule {
     }
 
     fn rotate(&self) -> Self {
-        let mut input = vec![' '; self.input.len()];
+        let mut input = vec![0; self.input.len()];
         let mut output = vec![None; self.output.len()];
         for y in 0..self.width {
             for x in 0..self.height {
@@ -117,9 +121,8 @@ impl Rule {
     fn matches(&self, grid: &Grid, x: usize, y: usize) -> bool {
         (0..self.height).all(|dy| {
             (0..self.width).all(|dx| {
-                let symbol = grid.symbols[usize::from(grid.cells[x + dx + (y + dy) * grid.width])];
-                self.input[dx + dy * self.width] == '*'
-                    || self.input[dx + dy * self.width] == symbol
+                let value = grid.cells[x + dx + (y + dy) * grid.width];
+                self.input[dx + dy * self.width] & (1_u16 << value) != 0
             })
         })
     }

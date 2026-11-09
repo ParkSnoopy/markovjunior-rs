@@ -24,14 +24,7 @@ impl Model {
         let document =
             Document::parse(xml).map_err(|parse_error| error(parse_error.to_string()))?;
         let root = document.root_element();
-        let values = root
-            .attribute("values")
-            .ok_or_else(|| error("root node is missing 'values'"))?;
-        let origin = root
-            .attribute("origin")
-            .unwrap_or("false")
-            .eq_ignore_ascii_case("true");
-        let grid = Grid::new(width, height, values, origin)?;
+        let grid = Grid::new(root, width, height)?;
         let root_node = Node::load(root, &grid, [true; 8])?;
         Ok(Self {
             grid,

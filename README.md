@@ -2,13 +2,16 @@
 
 This is an in-progress Rust port of the MarkovJunior interpreter.
 
-The current engine supports two-dimensional grids, literal and wildcard rules,
-the default square symmetries, and `one`, `all`, `prl`, `sequence`, `markov`,
-and `path` nodes. It loads one model XML file, runs a seeded simulation, and
-prints the final grid as text.
+The current engine supports two-dimensional grids, literal, wildcard, and
+union-symbol rules, the default square symmetries, and `one`, `all`, `prl`,
+`sequence`, `markov`, and `path` nodes. It loads one model XML file, runs a
+seeded simulation, and prints the final grid as text.
 
 The `symmetry` attribute accepts `()`, `(x)`, `(y)`, `(x)(y)`, `(xy+)`, and
 `(xy)`. Child rules can override their parent node's symmetry group.
+
+Declare a union inside a `sequence` or `markov` node. For example,
+`<union symbol="X" values="BW"/>` makes input symbol `X` match `B` or `W`.
 
 It does not yet support 3D grids, inference, fields, or map nodes,
 convolution, convchain, WFC, image or voxel rule inputs, graphical output, or
