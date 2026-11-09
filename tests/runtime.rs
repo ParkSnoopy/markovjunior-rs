@@ -45,3 +45,21 @@ fn model_rejects_rules_with_undeclared_symbols() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn path_node_connects_a_start_to_a_reachable_goal() -> Result<(), Box<dyn std::error::Error>> {
+    let xml = "<sequence values='BRWG' origin='true'><one in='B' out='W' steps='1'/><path from='R' to='W' on='B' color='G' inertia='true'/></sequence>";
+    let mut model = Model::from_xml(xml, 9, 9)?;
+    let mut rng = StdRng::seed_from_u64(7);
+
+    let turns = model.run(10, &mut rng);
+    let green = model.grid().rows().join("").matches('G').count();
+
+    if turns < 2 || green == 0 {
+        return Err(std::io::Error::other(format!(
+            "expected a path, got {turns} turns and {green} path cells"
+        ))
+        .into());
+    }
+    Ok(())
+}

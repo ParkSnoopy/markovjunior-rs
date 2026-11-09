@@ -4,6 +4,7 @@ use roxmltree::Node as XmlNode;
 use crate::{
     error::{ModelError, error},
     grid::Grid,
+    path::PathNode,
     rule::{Rule, apply_all, apply_one},
 };
 
@@ -29,6 +30,7 @@ pub enum Node {
     Markov {
         children: Vec<Self>,
     },
+    Path(PathNode),
 }
 
 impl Node {
@@ -76,6 +78,7 @@ impl Node {
                     children: load_children(xml, grid)?,
                 })
             }
+            "path" => Ok(Self::Path(PathNode::load(xml, grid)?)),
             kind => Err(error(format!("unsupported node type '{kind}'"))),
         }
     }
@@ -115,6 +118,7 @@ impl Node {
                 false
             }
             Self::Markov { children } => children.iter_mut().any(|child| child.tick(grid, rng)),
+            Self::Path(path) => path.apply(grid, rng),
         }
     }
 }
@@ -124,7 +128,7 @@ fn load_children(xml: XmlNode<'_, '_>, grid: &Grid) -> Result<Vec<Node>, ModelEr
         .filter(|child| {
             matches!(
                 child.tag_name().name(),
-                "one" | "all" | "prl" | "sequence" | "markov"
+                "one" | "all" | "prl" | "sequence" | "markov" | "path"
             )
         })
         .map(|child| Node::load(child, grid))
