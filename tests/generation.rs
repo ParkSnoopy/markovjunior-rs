@@ -69,7 +69,7 @@ fn ten_buildings_have_distinct_ground_plans_before_coloring()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut plans = HashSet::new();
     for seed in 0..10 {
-        let mut model = Model::from_xml_3d(include_str!("../models/Courtyard.xml"), 27, 21, 18)?;
+        let mut model = Model::from_xml_3d(include_str!("../models/Courtyard.xml"), 25, 25, 54)?;
         if model.grid().layers().flatten().filter(|&&v| v != 0).count() != 1 {
             return Err("building must start with only one seed voxel".into());
         }
@@ -77,10 +77,41 @@ fn ten_buildings_have_distinct_ground_plans_before_coloring()
             return Err("building did not finish".into());
         }
         let layers: Vec<_> = model.grid().layers().collect();
-        if layers.iter().any(|layer| layer.contains(&1)) {
+        if layers
+            .iter()
+            .any(|layer| layer.contains(&1) || layer.contains(&2))
+        {
             return Err("unfinished roof sites".into());
         }
         let plan: Vec<_> = layers[0].iter().map(|&v| v != 0).collect();
+        // Count real floor plates at bay centres, not signs or the transmitter mast.
+        let mut storeys = HashSet::new();
+        for y in (2..25).step_by(5) {
+            for x in (2..25).step_by(5) {
+                let i = y * 25 + x;
+                if !plan[i] {
+                    continue;
+                }
+                let plates = layers
+                    .iter()
+                    .skip(2)
+                    .step_by(3)
+                    .take_while(|layer| {
+                        (y - 2..=y + 2).all(|row| {
+                            layer[row * 25 + x - 2..=row * 25 + x + 2]
+                                .iter()
+                                .all(|&v| v == 3)
+                        })
+                    })
+                    .count();
+                storeys.insert(plates);
+            }
+        }
+        if storeys.len() < 3 || storeys.iter().max().copied().unwrap_or(0) < 9 {
+            return Err(
+                format!("missing high-rise or setbacks at seed {seed}: {storeys:?}").into(),
+            );
+        }
         if plan.iter().filter(|&&v| v).count() <= 9 || !plans.insert(plan) {
             return Err(format!("missing growth or repeated footprint at seed {seed}").into());
         }

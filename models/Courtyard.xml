@@ -1,18 +1,32 @@
-<sequence values=".RSG" origin="true" symmetry="(xy)">
-  <!-- Lower the first room site until exactly one layer fits beneath it. -->
-  <one in="R . ." out=". R *"/>
-  <!-- Place one bay. G is a connection point in a wall; R is an open roof site. -->
-  <one in=".../.../... .../.R./... .../.../..." out="SSS/SRS/SSS SGS/G.G/SGS SSS/SSS/SSS"/>
-  <!-- Grow wings: one wall and a vacant volume permit a whole new room or long hall.
-       Open a doorway through the shared wall as the new bay attaches. -->
-  <one steps="12">
-    <rule in="*.../*.../*... *.../G.../*... *.../*.../*..." out="*SSS/*SRS/*SSS *SGS/...G/*SGS *SSS/*SSS/*SSS"/>
-    <rule in="*....../*....../*...... *....../G....../*...... *....../*....../*......" out="*SSSSSS/*SRSSRS/*SSSSSS *SGSSGS/......G/*SGSSGS *SSSSSS/*SSSSSS/*SSSSSS"/>
+<sequence values=".RCSGNPA" origin="true" symmetry="(xy)">
+  <union symbol="X" values="RC"/>
+  <!-- Ground a seed and attach five-cell bays. Leave two cells around each site for its walls. -->
+  <one in="R ." out=". R"/>
+  <one in="***...../***...../R......./***...../***....." out="********/********/*****R**/********/********" steps="10"/>
+  <all in=". . . R" out="R * * A" steps="1"/>
+  <!-- Choose a core on this footprint; grow one or two storeys per extension. -->
+  <one in="R" out="C" steps="1"/>
+  <one steps="7">
+    <rule in=". . . C" out="C * * R"/>
+    <rule in=". . . . . . C" out="C * * R * * R"/>
   </one>
-  <!-- Each exposed roof can support another storey, or close as a terrace.
-       The same rule can act on its own new roof. No height map is supplied. -->
-  <one>
-    <rule in=".../.../... .../.../... .../.../... ***/*R*/***" out="SSS/SRS/SSS SGS/G.G/SGS SSS/SSS/SSS ***/*S*/***"/>
-    <rule in="R" out="S"/>
-  </one>
+  <!-- A wing needs both a floor directly below and a neighbour three storeys above it.
+       Repeated matches carry height away from the core, stepping down two storeys per bay. -->
+  <prl in="X***** ****** ****** ****** ****** ****** *****. ****** ****** *****R" out="****** ****** ****** ****** ****** ****** *****R ****** ****** ******"/>
+  <!-- Reserve the crown until the last occupied storey has been enclosed. -->
+  <one in=". . . C" out="C * * R" steps="1"/>
+  <!-- Ground-floor lobby: recessed door, piers, glass and a full roof plate. -->
+  <all in="*****/*****/*****/*****/***** *****/*****/*****/*****/***** *****/*****/**A**/*****/*****" out="SSSSS/SSSSS/SSSSS/SSSSS/SSSSS SGGGS/G...G/G...G/G...G/SG.GS SSSSS/SSSSS/SSSSS/SSSSS/SSSSS"/>
+  <!-- Enclose a floor only once the slab below exists. Variants change the facade, not its support. -->
+  <all>
+    <rule in="*****/*****/*****/*****/***** *****/*****/*****/*****/***** *****/*****/**R**/*****/***** *****/*****/**S**/*****/*****" out="SSSSS/SSSSS/SSSSS/SSSSS/SSSSS SGGGS/G...G/G...G/G...G/SGGGS SGGGS/G...G/G...G/G...G/SGGGS *****/*****/*****/*****/*****"/>
+    <rule in="*****/*****/*****/*****/***** *****/*****/*****/*****/***** *****/*****/**R**/*****/***** *****/*****/**S**/*****/*****" out="SSSSS/SSSSS/SSSSS/SSSSS/SSSSS SNNNS/G...G/G...G/G...G/SGGGS SGGGS/G...G/G...G/G...G/SGGGS *****/*****/*****/*****/*****"/>
+  </all>
+  <!-- Cap the core with a plant room, transmitter mast and warning beacon. -->
+  <one in=".../.../... .../.../... .../.../... .../.../... .../.C./... ***/*S*/***" out="***/*P*/*** ***/*S*/*** ***/*S*/*** SSS/SSS/SSS SGS/SSS/SGS ***/***/***"/>
+  <!-- The lobby's open doorway and sill distinguish it from an upper-floor window.
+       Cantilever a lit canopy over the street from the slab above a free doorway. -->
+  <one in="S../S../S.. G../.../G.. S../S../S.." out="*SA/*SA/*SA ***/***/*** ***/***/***" steps="1"/>
+  <!-- Fasten projecting neon blade signs to clear spans of curtain wall. -->
+  <one in="S.. G.. G.. S.. G.. G.. S.." out="*AA **P **P **P **P **P *AA" steps="6"/>
 </sequence>
