@@ -12,10 +12,25 @@
   </all>
   <all in="UB" out="UU" steps="1"/>
   <all in="BU/UB" out="U*/**"/>
-  <all in="UB" out="*G"/>
-  <one in="B" out="E" steps="13"/>
+  <!-- Line the river with sandy banks, then grow meadows and forest groves across the valley. -->
+  <all>
+    <rule in="UB" out="*W"/>
+    <rule in="U*/*B" out="**/*W"/>
+  </all>
+  <all in="WB" out="*G" steps="1"/>
+  <one in="B" out="E" steps="18"/>
   <one>
     <rule in="EB" out="*E"/>
     <rule in="GB" out="*G"/>
+  </one>
+  <convolution neighborhood="Moore" steps="1">
+    <rule in="G" out="E" sum="5..8" values="E"/>
+    <rule in="E" out="G" sum="6..8" values="G"/>
+  </convolution>
+  <!-- Span a wooden bridge across the channel. -->
+  <one steps="1">
+    <rule in="GWUUUWG" out="GRRRRRG"/>
+    <rule in="GWUUUUWG" out="GRRRRRRG"/>
+    <rule in="WUUUW" out="RRRRR"/>
   </one>
 </sequence>

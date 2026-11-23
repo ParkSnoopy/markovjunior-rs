@@ -118,3 +118,41 @@ fn ten_buildings_have_distinct_ground_plans_before_coloring()
     }
     Ok(())
 }
+
+#[test]
+fn cave_connects_all_chambers_into_one_component() -> Result<(), Box<dyn std::error::Error>> {
+    const SIDE: usize = 33;
+    for seed in 0..6 {
+        let mut model = Model::from_xml(include_str!("../models/Cave.xml"), SIDE, SIDE)?;
+        if model.run(2_000, &mut StdRng::seed_from_u64(seed)) == 2_000 {
+            return Err("cave did not finish".into());
+        }
+        let cells = model.grid().rows().concat().into_bytes();
+        let floors: HashSet<usize> = cells
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &c)| matches!(c, b'W' | b'U').then_some(i))
+            .collect();
+        let Some(&start) = floors.iter().next() else {
+            return Err("cave produced no floor cells".into());
+        };
+        let mut visited = HashSet::from([start]);
+        let mut queue = std::collections::VecDeque::from([start]);
+        while let Some(curr) = queue.pop_front() {
+            for next in neighbors(curr, SIDE) {
+                if floors.contains(&next) && visited.insert(next) {
+                    queue.push_back(next);
+                }
+            }
+        }
+        if visited.len() != floors.len() {
+            return Err(format!(
+                "disconnected cave pockets at seed {seed}: reached {} of {}",
+                visited.len(),
+                floors.len()
+            )
+            .into());
+        }
+    }
+    Ok(())
+}

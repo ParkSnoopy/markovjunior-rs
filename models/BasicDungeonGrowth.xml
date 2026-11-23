@@ -1,12 +1,39 @@
 <sequence values="BRACDG" origin="True">
   <union symbol="?" values="BR"/>
-  <one in="**?**/*BBB*/*BBB?/*BBB*/**R**" out="AARAA/ADDDA/ADDDR/ADDDA/AACAA"/>
-  <one in="ACA/BBB" out="ARA/BBB"/>
+  <!-- Attach varied roguelike chambers, pillared halls, and junctions to open doorways. -->
+  <one>
+    <rule in="**?**/*BBB*/*BBB?/*BBB*/**R**" out="AARAA/ADDDA/ADDDR/ADDDA/AACAA"/>
+    <rule in="**?**/*BBB*/?BBB*/*BBB*/*BBB?/*BBB*/**R**" out="AARAA/ADDDA/RDDDA/ADDDA/ADDDR/ADDDA/AACAA"/>
+    <rule in="***?***/*BBBBB*/*BBBBB*/?BBBBB?/*BBBBB*/*BBBBB*/***R***" out="AAARAAA/ADDDDDA/ADADADA/RDDDDDR/ADADADA/ADDDDDA/AAACAAA"/>
+    <rule in="***?***/*BBBBB*/*BBBBB*/?BBBBB?/*BBBBB*/*BBBBB*/***R***" out="AAARAAA/ADDDDDA/ADAAADA/RDA*ADR/ADAAADA/ADDDDDA/AAACAAA"/>
+    <rule in="****?****/*BBBBBBB*/?BBBBBBB*/*BBBBBBB*/*BBBBBBB*/*BBBBBBB*/*BBBBBBB*/?BBBBBBB?/*BBBBBBB*/****R****" out="AAAARAAAA/ADDDDDDDA/RDDDDDDDA/ADDADADDA/ADDDDDDDA/ADDADADDA/ADDDDDDDA/RDDDDDDDR/ADDDDDDDA/AAAACAAAA"/>
+    <rule in="****?****/****B****/**BBBBB**/*BBBBBBB*/?BBBBBBB?/*BBBBBBB*/**BBBBB**/****B****/****R****" out="***ARA***/**AADAA**/*AADDDAA*/AADDDDDAA/RDDDDDDDR/AADDDDDAA/*AADDDAA*/**AADAA**/***ACA***"/>
+    <rule in="*******/?BBBBBR/***B***/***B***/**BBB**/**BBB**/**BBB**/***?***" out="AAAAAAA/RDDDDDC/AAADAAA/**ADA**/*ADDDA*/*ADDDA*/*ADDDA*/*AARAA*"/>
+    <rule in="***?*/***B*/***B*/*BBB*/*B***/*B***/*R***" out="**ARA/**ADA/AAADA/ADDDA/ADAAA/ADA**/ACA**"/>
+  </one>
+  <!-- Reopen sealed doorway sockets that face uncarved rock, then link doors with winding paths. -->
+  <one in="ACA/BBB" out="ARA/BBB" steps="12"/>
+  <markov>
+    <all>
+      <rule in="RG" out="CC"/>
+      <rule in="CR" out="CC"/>
+      <rule in="CG" out="CC"/>
+      <rule in="BC" out="AC"/>
+      <rule in="B*/*C" out="A*/*C"/>
+    </all>
+    <path from="R" to="G" on="B" color="C" inertia="true" longest="true"/>
+    <one in="G" out="A"/>
+    <one in="R" out="G"/>
+  </markov>
+  <!-- Open extra connections where two rooms share a wall, then trim dead-end corridor stubs. -->
+  <one in="ADA/AAA/ADA" out="ADA/ACA/ADA" steps="8"/>
+  <all in="C" out="D"/>
+  <all in="AAA/ADA" out="***/*A*"/>
   <all>
-    <rule in="C" out="D"/>
-    <rule in="R" out="D"/>
+    <rule in="BD" out="AD"/>
+    <rule in="B*/*D" out="A*/*D"/>
   </all>
-  <all in="BD" out="*A"/>
-  <all in="DDD/ADA/DDD" out="***/D*D/***"/>
-  <all in="DDD/DAD/DDD" out="***/*D*/***"/>
+  <!-- Highlight 1-cell doorway thresholds and interior room pillars. -->
+  <all in="DDD/ADA/DDD" out="DDD/ACA/DDD"/>
+  <all in="DDD/DAD/DDD" out="DDD/DG*/DDD"/>
 </sequence>

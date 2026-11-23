@@ -215,18 +215,23 @@ fn parse_pattern(source: &str) -> Result<Vec<Vec<char>>, ModelError> {
 fn candidates<'a>(rules: &'a [Rule], grid: &Grid) -> Vec<(&'a Rule, usize)> {
     let mut matches = Vec::new();
     let plane = grid.width * grid.height;
+    let wildcard = (1_u16 << grid.symbols.len()) - 1;
     for rule in rules {
         if rule.width > grid.width || rule.height > grid.height || rule.depth > grid.depth {
             continue;
         }
+        let checks: Vec<_> = rule
+            .positions(0, grid.width, plane)
+            .zip(&rule.input)
+            .filter_map(|(offset, &mask)| (mask != wildcard).then_some((offset, mask)))
+            .collect();
         for z in 0..=grid.depth - rule.depth {
             for y in 0..=grid.height - rule.height {
                 for x in 0..=grid.width - rule.width {
                     let start = x + y * grid.width + z * plane;
-                    if rule
-                        .positions(start, grid.width, plane)
-                        .zip(&rule.input)
-                        .all(|(pos, mask)| mask & (1 << grid.cells[pos]) != 0)
+                    if checks
+                        .iter()
+                        .all(|&(offset, mask)| mask & (1 << grid.cells[start + offset]) != 0)
                     {
                         matches.push((rule, start));
                     }

@@ -1,7 +1,17 @@
-<!-- A cubic spanning tree: each move adds one joint and one connecting strut.
-     The far end must be empty, so no move can close a cycle. -->
-<one values=".JF" origin="true" symmetry="(xy)">
-  <rule in="J.." out="*FJ"/>
-  <rule in="J . ." out="* F J"/>
-  <rule in=". . J" out="J F *"/>
-</one>
+<!-- A 3D cubic spanning tree expands into multi-level stone decks, bridged walkways, cyan lift shafts, and support columns. -->
+<sequence values=".JFSWPL" origin="true" symmetry="(xy)">
+  <one steps="48">
+    <rule in="J...." out="*FFFJ"/>
+    <rule in="J . . . ." out="* L L L J"/>
+    <rule in=". . . . J" out="J L L L *"/>
+  </one>
+  <!-- Expand each joint into a 3x3 stone deck around its glowing center hub. -->
+  <all in=".*./*J*/.*." out="SSS/SJS/SSS"/>
+  <!-- Widen each horizontal link between decks into a timber bridge with stone side parapets. -->
+  <all in=".../.../... S.S/SFS/S.S" out=".W./.../.W. SFS/FFF/SFS"/>
+  <!-- Crown upper shaft landings with four corner finials. -->
+  <all in=".../.../... SSS/SJS/SSS .../.L./..." out="W.W/.../W.W ***/***/*** ***/***/***"/>
+  <!-- Drop a slender central column beneath decks that overhang empty space. -->
+  <all in="J . ." out="* P P"/>
+  <all in="P ." out="* P"/>
+</sequence>

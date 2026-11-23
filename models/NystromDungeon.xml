@@ -1,6 +1,10 @@
 <sequence values="BPWRG" origin="True">
   <all in="PBB" out="**P" comment="draw a grid"/>
-  <one in="PBPBPBPBP/BBBBBBBBB/PBPBPBPBP/BBBBBBBBB/PBPBPBPBP/BBBBBBBBB/PBPBPBPBP" out="WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW"/>
+  <one steps="14" comment="place varied rooms on the lattice">
+    <rule in="PBPBPBPBP/BBBBBBBBB/PBPBPBPBP/BBBBBBBBB/PBPBPBPBP/BBBBBBBBB/PBPBPBPBP" out="WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW/WWWWWWWWW"/>
+    <rule in="PBPBPBP/BBBBBBB/PBPBPBP/BBBBBBB/PBPBPBP" out="WWWWWWW/WWWWWWW/WWWWWWW/WWWWWWW/WWWWWWW"/>
+    <rule in="PBPBP/BBBBB/PBPBP/BBBBB/PBPBP" out="WWWWW/WWWWW/WWWWW/WWWWW/WWWWW"/>
+  </one>
   <markov comment="generate corridors with MazeBacktracker">
     <one in="RBP" out="GGR"/>
     <one in="GGR" out="RWW"/>
@@ -12,10 +16,15 @@
     <all in="GWW" out="**G"/>
     <one in="GBW" out="*WG"/>
   </markov>
-  <one in="GBG" out="*W*" steps="5" comment="insert cycles"/>
-  <!--<one in="WGBG/WW**" out="**W*/****" steps="5"/>-->
+  <one in="GBG" out="*R*" steps="6" comment="insert cycle doorways"/>
   <all in="G" out="W" comment="forget structure"/>
   <all in="BBB/BWB" out="BBB/BBB" comment="retract dead ends"/>
+  <!-- Frame carved rooms and corridors with stone masonry walls. -->
+  <all>
+    <rule in="BW" out="PW"/>
+    <rule in="BR" out="PR"/>
+    <rule in="B*/*W" out="P*/*W"/>
+  </all>
 </sequence>
 
 <!--
@@ -23,6 +32,4 @@ Generates a dungeon with rooms and corridors, containing a fixed amount of cycle
 
 Adaptation of http://journal.stuffwithstuff.com/2014/12/21/rooms-and-mazes/
 Compare to implementations in conventional languages: https://github.com/munificent/rooms-and-mazes
-
-For shorter versions that use connectivity patterns, see NystromKruskal and KruskalNystrom.
 -->

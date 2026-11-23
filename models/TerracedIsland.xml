@@ -1,13 +1,30 @@
-<sequence values=".RWGBL" origin="true" symmetry="(xy)">
+<sequence values=".RWBSGTL" origin="true" symmetry="(xy)">
   <union symbol="~" values="RW"/>
   <one in="R ." out=". R"/>
   <prl in="~." out="*W"/>
-  <!-- A connected shore grows out of one rock in the water plane. -->
-  <one in="RW" out="*R" steps="45"/>
-  <prl in="RW" out="*R" p="0.35" steps="14"/>
-  <!-- Deposit only over a supported patch. Narrow peninsulas cannot rise as high as broad interiors. -->
-  <prl in="***/**./*** **R/*RR/**R" out="***/**R/*** ***/***/***" p="0.55" steps="10"/>
+  <!-- Grow a connected island footprint in the sea plane and smooth jagged coves. -->
+  <one in="RW" out="*R" steps="75"/>
+  <prl in="RW" out="*R" p="0.42" steps="16"/>
+  <all>
+    <rule in="RWR/RRR" out="RRR/RRR"/>
+    <rule in="RWR" out="RRR"/>
+  </all>
+  <!-- Step terraces upward over supported 3x3 rock bases and fill interior pockets. -->
+  <prl in="***/*.*/*** RRR/RRR/RRR" out="***/*R*/*** ***/***/***" p="0.82" steps="10"/>
+  <all>
+    <rule in="R.R/RRR" out="RRR/RRR"/>
+    <rule in="R.R" out="RRR"/>
+  </all>
+  <!-- Carve sandy beaches along the shoreline and cap terrace flats with grass turf. -->
+  <all in="WR" out="*B"/>
+  <prl in="BR" out="*B" p="0.45" steps="1"/>
+  <all in="R B" out=". B"/>
   <prl in=". R" out="* G"/>
-  <prl in="WG" out="*B"/>
-  <prl in=". G" out="L *" p="0.08" steps="1"/>
+  <!-- Expose grey stone cliff faces only where a terrace drops two or more layers. -->
+  <all in=".. .. G. R. RG" out="** ** R* ** **"/>
+  <!-- Extend a wooden pier into the bay and raise a stone watchtower on a high terrace. -->
+  <one in="....../....../...... *WWWWW/BWWWWW/*WWWWW" out="....../.TTTTT/...... ******/*****T/******" steps="1"/>
+  <one in=".../.../... .../.../... .../.../... .../.../... GGG/GGG/GGG RRR/RRR/RRR" out="***/*B*/*** TTT/TTT/TTT S.S/.../S.S SSS/S.S/SSS SSS/SSS/SSS ***/***/***" steps="1"/>
+  <!-- Grow 3D trees with timber trunks and leafy crowns across grassy terraces. -->
+  <one in=".../.../... .../.../... .../.../... GGG/GGG/GGG" out="***/*L*/*** .L./LTL/.L. .../.T./... ***/***/***" steps="14"/>
 </sequence>

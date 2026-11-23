@@ -33,19 +33,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "frame-cube",
             include_str!("../models/FrameCube.xml"),
-            [13, 13, 13],
-            &[[255, 202, 119], [89, 190, 183]][..],
+            [19, 19, 19],
+            &[
+                [255, 198, 108],
+                [188, 162, 132],
+                [118, 128, 146],
+                [224, 214, 196],
+                [82, 92, 110],
+                [89, 214, 202],
+            ][..],
         ),
         (
             "terraced-island",
             include_str!("../models/TerracedIsland.xml"),
-            [35, 29, 12],
+            [37, 31, 16],
             &[
-                [164, 153, 137],
-                [67, 155, 186],
-                [138, 189, 107],
-                [231, 203, 148],
-                [58, 127, 94],
+                [142, 136, 128],
+                [58, 148, 186],
+                [234, 206, 148],
+                [236, 232, 222],
+                [128, 186, 98],
+                [158, 106, 70],
+                [52, 122, 82],
             ][..],
         ),
     ] {
@@ -58,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             [WIDTH, HEIGHT]
         };
         let mut frames = vec![volume_frame(model.grid(), view)?];
-        let stride = if name == "frame-cube" { 6 } else { 2 };
+        let stride = 2;
         loop {
             let advanced = model.run(stride, &mut rng);
             if advanced != 0 {

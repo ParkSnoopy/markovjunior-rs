@@ -13,9 +13,9 @@ use gif::{Encoder, Frame, Repeat};
 use markovjunior_rs::Model;
 use rand::{SeedableRng, rngs::StdRng};
 
-const WIDTH: u16 = 41;
-const HEIGHT: u16 = 33;
-const SCALE: u16 = 8;
+const WIDTH: u16 = 57;
+const HEIGHT: u16 = 45;
+const SCALE: u16 = 6;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let (directory, seed) = common::gallery_options()?;
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "maze",
             include_str!("../models/MazeBacktracker.xml"),
-            12,
+            20,
             "BRGW",
             &[
                 [20, 29, 39],
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "dungeon",
             include_str!("../models/BasicDungeonGrowth.xml"),
-            1,
+            2,
             "BRACDG",
             &[
                 [22, 27, 35],
@@ -51,13 +51,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             "cave",
             include_str!("../models/Cave.xml"),
             1,
-            "DA",
-            &[[28, 39, 57], [160, 201, 216]][..],
+            "DAWU",
+            &[[24, 32, 46], [76, 92, 114], [196, 184, 156], [64, 156, 204]][..],
         ),
         (
             "river",
             include_str!("../models/River.xml"),
-            32,
+            48,
             "BWRUGE",
             &[
                 [32, 43, 57],
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "flowers",
             include_str!("../models/Flowers.xml"),
-            2,
+            3,
             "NGUEPY",
             &[
                 [67, 48, 52],
@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "rooms-and-mazes",
             include_str!("../models/NystromDungeon.xml"),
-            8,
+            14,
             "BPWRG",
             &[
                 [26, 34, 44],

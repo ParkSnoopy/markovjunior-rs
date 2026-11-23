@@ -11,4 +11,7 @@
     <one in="UUUUU/UUUUU/UUUUU/GGGGG/NNNNN" out="*****/**P**/**E**/**E**/**E**"/>
   </markov>
   <all in="***/*P*/***" out="*Y*/YEY/*Y*"/>
+  <!-- Open rose blossoms on a subset of blooms and sprout leaves along stems. -->
+  <one in="*Y*/YEY/*Y*" out="*P*/PYP/*P*" steps="9"/>
+  <all in="UEU/UEU/UEU" out="***/*E*/G*G"/>
 </sequence>
