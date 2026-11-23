@@ -2,6 +2,15 @@
 
 This is an in-progress Rust port of the MarkovJunior interpreter.
 
+| 2D · top view | 3D · isometric view |
+| :---: | :---: |
+| ![Planar growth spreading outward from one occupied cell](assets/growth-2d.gif) | ![Voxel growth spreading above, below, and around the center](assets/growth-3d.gif) |
+
+Both animations run `models/VoxelGrowth.xml` from a single occupied cell for
+14 steps with seed `7`. On each step, an empty cell with one or two occupied
+face neighbors has a 65% chance to fill. The only change between runs is the
+depth: `1` on the left, `31` on the right.
+
 The current engine supports two-dimensional grids, literal, wildcard, and
 union-symbol rules, the default square symmetries, and `one`, `all`, `prl`,
 `sequence`, `markov`, `path`, and 2D `convolution` nodes. It loads one model XML
@@ -13,17 +22,23 @@ The `symmetry` attribute accepts `()`, `(x)`, `(y)`, `(x)(y)`, `(xy+)`, and
 Declare a union inside a `sequence` or `markov` node. For example,
 `<union symbol="X" values="BW"/>` makes input symbol `X` match `B` or `W`.
 
-It does not yet support 3D grids, inference, fields, map nodes, convchain, WFC,
-image or voxel rule inputs, graphical output, or the upstream multi-model runner.
+3D grids support `convolution` with `VonNeumann` (face neighbors) or
+`NoCorners` (faces and edges), alone or inside `sequence` and `markov`.
+3D pattern rewrites and paths are not yet supported. Other missing features
+include inference, fields, map nodes, convchain, WFC, image or voxel rule
+inputs, graphical rendering, and the upstream multi-model runner.
 
 ## Run
 
 ```sh
-cargo run -- MarkovJunior/models/Growth.xml --width 32 --height 32 --steps 1000 --seed 7
+cargo run --locked -- models/VoxelGrowth.xml --width 31 --height 31 --depth 31 --steps 14 --seed 7 --vox growth.vox
 ```
 
-Arguments after the model path are optional. Defaults are width `64`, height
-`64`, steps `10000`, and seed `0`.
+Open `growth.vox` in MagicaVoxel. Choose a new output filename for each run;
+the CLI does not overwrite existing files. The first symbol in `values` is
+empty space; the remaining symbols use consecutive default palette entries.
+VOX output supports up to 256 cells on each axis. Omit `--vox` for text output.
+Defaults are width `64`, height `64`, depth `1` (2D), steps `10000`, and seed `0`.
 
 ## Code layout
 

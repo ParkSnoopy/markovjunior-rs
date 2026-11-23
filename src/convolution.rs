@@ -18,6 +18,7 @@ pub struct ConvolutionNode {
 #[derive(Debug, Clone, Copy)]
 enum Neighborhood {
     Moore,
+    NoCorners,
     VonNeumann,
 }
 
@@ -36,9 +37,15 @@ impl ConvolutionNode {
             .attribute("neighborhood")
             .ok_or_else(|| error("convolution node is missing 'neighborhood'"))?
         {
-            "Moore" => Neighborhood::Moore,
+            "Moore" if grid.depth == 1 => Neighborhood::Moore,
+            "NoCorners" if grid.depth > 1 => Neighborhood::NoCorners,
             "VonNeumann" => Neighborhood::VonNeumann,
-            value => return Err(error(format!("unknown 2D neighborhood '{value}'"))),
+            value => {
+                return Err(error(format!(
+                    "unsupported neighborhood '{value}' for depth {}",
+                    grid.depth
+                )));
+            }
         };
         let steps = xml
             .attribute("steps")
@@ -102,33 +109,40 @@ impl ConvolutionNode {
 
     fn neighbor_counts(grid: &Grid, neighborhood: Neighborhood, periodic: bool) -> Vec<[u8; 8]> {
         let mut counts = vec![[0; 8]; grid.cells.len()];
-        for y in 0..grid.height {
-            for x in 0..grid.width {
-                let position = x + y * grid.width;
-                for dy in -1_isize..=1 {
-                    for dx in -1_isize..=1 {
-                        if dx == 0 && dy == 0
-                            || matches!(neighborhood, Neighborhood::VonNeumann)
-                                && dx != 0
-                                && dy != 0
-                        {
-                            continue;
-                        }
-                        let mut next_x = x as isize + dx;
-                        let mut next_y = y as isize + dy;
-                        if periodic {
-                            next_x = next_x.rem_euclid(grid.width as isize);
-                            next_y = next_y.rem_euclid(grid.height as isize);
-                        } else if next_x < 0
-                            || next_y < 0
-                            || next_x >= grid.width as isize
-                            || next_y >= grid.height as isize
-                        {
-                            continue;
-                        }
-                        let next = next_x as usize + next_y as usize * grid.width;
-                        counts[position][usize::from(grid.cells[next])] += 1;
+        let radius_z = isize::from(u8::from(grid.depth > 1));
+        let max_distance = match neighborhood {
+            Neighborhood::VonNeumann => 1,
+            Neighborhood::Moore | Neighborhood::NoCorners => 2,
+        };
+        let mut offsets = Vec::new();
+        for dz in -radius_z..=radius_z {
+            for dy in -1_isize..=1 {
+                for dx in -1_isize..=1 {
+                    if (1..=max_distance).contains(&(dx.abs() + dy.abs() + dz.abs())) {
+                        offsets.push((dx, dy, dz));
                     }
+                }
+            }
+        }
+        let axis = |coord: usize, delta: isize, size: usize| {
+            let n = coord as isize + delta;
+            if periodic {
+                Some(n.rem_euclid(size as isize) as usize)
+            } else {
+                (0..size as isize).contains(&n).then_some(n as usize)
+            }
+        };
+        for (i, count) in counts.iter_mut().enumerate() {
+            let (x, row) = (i % grid.width, i / grid.width);
+            let (y, z) = (row % grid.height, row / grid.height);
+            for &(dx, dy, dz) in &offsets {
+                if let (Some(nx), Some(ny), Some(nz)) = (
+                    axis(x, dx, grid.width),
+                    axis(y, dy, grid.height),
+                    axis(z, dz, grid.depth),
+                ) {
+                    let value = grid.cells[nx + grid.width * (ny + grid.height * nz)];
+                    count[usize::from(value)] += 1;
                 }
             }
         }

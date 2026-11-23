@@ -4,11 +4,12 @@ use roxmltree::Node as XmlNode;
 
 use crate::error::{ModelError, error};
 
-/// A rectangular two-dimensional grid.
+/// A rectangular grid stored in x, then y, then z order.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grid {
     pub(crate) width: usize,
     pub(crate) height: usize,
+    pub(crate) depth: usize,
     pub(crate) symbols: Vec<char>,
     pub(crate) indices: HashMap<char, u8>,
     pub(crate) waves: HashMap<char, u16>,
@@ -20,6 +21,7 @@ impl Grid {
         xml: XmlNode<'_, '_>,
         width: usize,
         height: usize,
+        depth: usize,
     ) -> Result<Self, ModelError> {
         let values = xml
             .attribute("values")
@@ -30,13 +32,15 @@ impl Grid {
             _ => return Err(error("origin must be true or false")),
         };
         let symbols: Vec<char> = values.chars().filter(|symbol| *symbol != ' ').collect();
-        if width == 0 || height == 0 || !(1..=8).contains(&symbols.len()) {
+        if width == 0 || height == 0 || depth == 0 || !(1..=8).contains(&symbols.len()) {
             return Err(error(
                 "grid dimensions must be positive and values must contain 1 to 8 symbols",
             ));
         }
         let cell_count = width
             .checked_mul(height)
+            .and_then(|area| area.checked_mul(depth))
+            .filter(|&size| isize::try_from(size).is_ok())
             .ok_or_else(|| error("grid dimensions exceed supported size"))?;
         if origin && symbols.len() < 2 {
             return Err(error("origin requires at least two grid values"));
@@ -63,13 +67,14 @@ impl Grid {
         let mut grid = Self {
             width,
             height,
+            depth,
             symbols,
             indices,
             waves,
             cells: vec![0; cell_count],
         };
         if origin {
-            let center = width / 2 + (height / 2) * width;
+            let center = width / 2 + (height / 2 + depth / 2 * height) * width;
             grid.cells[center] = 1;
         }
         Ok(grid)
@@ -87,7 +92,7 @@ impl Grid {
         self.height
     }
 
-    /// Returns the grid as rows of symbols.
+    /// Returns the grid as rows of symbols, one z layer after another.
     #[must_use]
     pub fn rows(&self) -> Vec<String> {
         self.cells

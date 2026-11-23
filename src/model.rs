@@ -7,7 +7,7 @@ use crate::{
     node::Node,
 };
 
-/// A loaded two-dimensional `MarkovJunior` model.
+/// A loaded `MarkovJunior` model.
 #[derive(Debug)]
 pub struct Model {
     grid: Grid,
@@ -21,10 +21,23 @@ impl Model {
     ///
     /// Returns an error when the XML, grid, or supported node data is invalid.
     pub fn from_xml(xml: &str, width: usize, height: usize) -> Result<Self, ModelError> {
+        Self::from_xml_3d(xml, width, height, 1)
+    }
+
+    /// Loads a model on a volume. A depth of one selects 2D semantics.
+    ///
+    /// # Errors
+    /// Returns an error for invalid XML, dimensions, or unsupported nodes.
+    pub fn from_xml_3d(
+        xml: &str,
+        width: usize,
+        height: usize,
+        depth: usize,
+    ) -> Result<Self, ModelError> {
         let document =
             Document::parse(xml).map_err(|parse_error| error(parse_error.to_string()))?;
         let root = document.root_element();
-        let grid = Grid::new(root, width, height)?;
+        let grid = Grid::new(root, width, height, depth)?;
         let root_node = Node::load(root, &grid, [true; 8])?;
         Ok(Self {
             grid,

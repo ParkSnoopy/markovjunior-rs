@@ -41,6 +41,13 @@ impl Node {
         grid: &Grid,
         parent_symmetry: [bool; 8],
     ) -> Result<Self, ModelError> {
+        if grid.depth > 1 && !matches!(xml.tag_name().name(), "convolution" | "sequence" | "markov")
+        {
+            return Err(error(format!(
+                "unsupported 3D node '{}'",
+                xml.tag_name().name()
+            )));
+        }
         match xml.tag_name().name() {
             "one" | "all" | "prl" => {
                 let node_symmetry = resolve_symmetry(xml.attribute("symmetry"), parent_symmetry)?;
@@ -143,6 +150,9 @@ fn load_children(
 ) -> Result<Vec<Node>, ModelError> {
     xml.children()
         .filter(|child| {
+            if grid.depth > 1 {
+                return child.is_element() && !child.has_tag_name("union");
+            }
             matches!(
                 child.tag_name().name(),
                 "one" | "all" | "prl" | "sequence" | "markov" | "path" | "convolution"

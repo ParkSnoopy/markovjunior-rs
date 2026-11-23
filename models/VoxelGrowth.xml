@@ -1,0 +1,3 @@
+<convolution values="BW" origin="true" neighborhood="VonNeumann">
+  <rule in="B" out="W" values="W" sum="1..2" p="0.65"/>
+</convolution>
