@@ -181,25 +181,25 @@ fn parse_pattern(source: &str) -> Result<Vec<Vec<char>>, ModelError> {
 }
 
 pub fn apply_one<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R) -> bool {
+    let mut matches = Vec::new();
     for rule in rules {
-        let mut matches = Vec::new();
         if rule.width > grid.width || rule.height > grid.height {
             continue;
         }
         for y in 0..=grid.height - rule.height {
             for x in 0..=grid.width - rule.width {
                 if rule.matches(grid, x, y) {
-                    matches.push((x, y));
+                    matches.push((rule, x, y));
                 }
             }
         }
-        if !matches.is_empty() {
-            let (x, y) = matches[rng.gen_range(0..matches.len())];
-            rule.apply(grid, x, y);
-            return true;
-        }
     }
-    false
+    if matches.is_empty() {
+        return false;
+    }
+    let (rule, x, y) = matches[rng.gen_range(0..matches.len())];
+    rule.apply(grid, x, y);
+    true
 }
 
 pub fn apply_all<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R, parallel: bool) -> bool {

@@ -65,6 +65,21 @@ fn path_node_connects_a_start_to_a_reachable_goal() -> Result<(), Box<dyn std::e
 }
 
 #[test]
+fn maze_can_open_in_each_direction() -> Result<(), Box<dyn std::error::Error>> {
+    let mut openings = std::collections::BTreeSet::new();
+    for seed in 0..64 {
+        let mut model = Model::from_xml(include_str!("../models/MazeBacktracker.xml"), 5, 5)?;
+        model.run(1, &mut StdRng::seed_from_u64(seed));
+        let cells = model.grid().rows().join("");
+        openings.insert(cells.find('R').ok_or("maze lost its active cell")?);
+    }
+    if openings != [2, 10, 14, 22].into() {
+        return Err(format!("expected four possible openings, got {openings:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
 fn branch_symmetry_limits_child_rule_orientations() -> Result<(), Box<dyn std::error::Error>> {
     let xml =
         "<sequence values='BW' origin='true' symmetry='()'><one in='WB' out='WW'/></sequence>";

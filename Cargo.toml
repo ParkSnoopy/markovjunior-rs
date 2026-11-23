@@ -12,6 +12,9 @@ categories      = ["games", "algorithms"]
 rand = "0.8"
 roxmltree = "0.21"
 
+[dev-dependencies]
+gif = { version = "0.13", default-features = false, features = ["std", "raii_no_panic"] }
+
 # ============================================
 # RUST-MAGIC-LINTER (maximum preset)
 # https://github.com/ParkSnoopy/rust-magic-linter

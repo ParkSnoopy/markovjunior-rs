@@ -1,6 +1,29 @@
 # MarkovJunior in Rust
 
-This is an in-progress Rust port of the MarkovJunior interpreter.
+This Rust port of [MarkovJunior](https://github.com/mxgmn/MarkovJunior) generates maps by repeatedly replacing patterns on a grid. The animations below show the Rust interpreter running the linked XML models.
+
+## From rules to maps
+
+| [Backtracking maze](models/MazeBacktracker.xml) | [Dungeon rooms](models/BasicDungeonGrowth.xml) | [Cave](models/Cave.xml) |
+| :---: | :---: | :---: |
+| ![A maze grows along a green trail and backtracks at dead ends](assets/maze.gif) | ![Square rooms attach at doorways and merge into a dungeon floor plan](assets/dungeon.gif) | ![Random cells smooth into cave pockets](assets/cave.gif) |
+
+**Maze.** Two rules drive the orange cell. `RBB → GGR` advances it two spaces into untouched ground, leaving a green trail. When it cannot advance, `RGG → WWR` walks it back along that trail and marks the finished passage white. Rotations let the same rules carve in all four directions.
+
+**Dungeon.** A room template attaches to an open doorway. Once no more rooms fit, cleanup rules turn temporary markers into floor and open walls between adjacent rooms.
+
+**Cave.** The generator scatters noise, then each cell counts its eight neighbors. Dense patches survive while isolated squares disappear; a final rule cleans up diagonal contacts.
+
+Run the maze as text, or regenerate all three GIFs (41 × 33 cells, seed `7`):
+
+```sh
+cargo run --locked -- models/MazeBacktracker.xml --width 41 --height 33 --seed 7
+cargo run --locked --example gallery -- assets
+```
+
+The three XML models are from [Maxim Gumin’s original collection](https://github.com/mxgmn/MarkovJunior/tree/42aaf24bcf54ae164fba49c0a59348297904a676/models) ([MIT license](LICENSE)). The gallery uses local copies; no upstream checkout is needed.
+
+## The same growth rule in 2D and 3D
 
 | 2D · top view | 3D · isometric view |
 | :---: | :---: |
