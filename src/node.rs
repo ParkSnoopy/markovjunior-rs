@@ -2,6 +2,7 @@ use rand::Rng;
 use roxmltree::Node as XmlNode;
 
 use crate::{
+    convolution::ConvolutionNode,
     error::{ModelError, error},
     grid::Grid,
     path::PathNode,
@@ -31,6 +32,7 @@ pub enum Node {
         children: Vec<Self>,
     },
     Path(PathNode),
+    Convolution(ConvolutionNode),
 }
 
 impl Node {
@@ -88,6 +90,7 @@ impl Node {
                 })
             }
             "path" => Ok(Self::Path(PathNode::load(xml, grid)?)),
+            "convolution" => Ok(Self::Convolution(ConvolutionNode::load(xml, grid)?)),
             kind => Err(error(format!("unsupported node type '{kind}'"))),
         }
     }
@@ -128,6 +131,7 @@ impl Node {
             }
             Self::Markov { children } => children.iter_mut().any(|child| child.tick(grid, rng)),
             Self::Path(path) => path.apply(grid, rng),
+            Self::Convolution(node) => node.tick(grid, rng),
         }
     }
 }
@@ -141,7 +145,7 @@ fn load_children(
         .filter(|child| {
             matches!(
                 child.tag_name().name(),
-                "one" | "all" | "prl" | "sequence" | "markov" | "path"
+                "one" | "all" | "prl" | "sequence" | "markov" | "path" | "convolution"
             )
         })
         .map(|child| Node::load(child, grid, symmetry))

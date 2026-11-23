@@ -4,8 +4,8 @@ This is an in-progress Rust port of the MarkovJunior interpreter.
 
 The current engine supports two-dimensional grids, literal, wildcard, and
 union-symbol rules, the default square symmetries, and `one`, `all`, `prl`,
-`sequence`, `markov`, and `path` nodes. It loads one model XML file, runs a
-seeded simulation, and prints the final grid as text.
+`sequence`, `markov`, `path`, and 2D `convolution` nodes. It loads one model XML
+file, runs a seeded simulation, and prints the final grid as text.
 
 The `symmetry` attribute accepts `()`, `(x)`, `(y)`, `(x)(y)`, `(xy+)`, and
 `(xy)`. Child rules can override their parent node's symmetry group.
@@ -13,9 +13,8 @@ The `symmetry` attribute accepts `()`, `(x)`, `(y)`, `(x)(y)`, `(xy+)`, and
 Declare a union inside a `sequence` or `markov` node. For example,
 `<union symbol="X" values="BW"/>` makes input symbol `X` match `B` or `W`.
 
-It does not yet support 3D grids, inference, fields, or map nodes,
-convolution, convchain, WFC, image or voxel rule inputs, graphical output, or
-the upstream multi-model runner.
+It does not yet support 3D grids, inference, fields, map nodes, convchain, WFC,
+image or voxel rule inputs, graphical output, or the upstream multi-model runner.
 
 ## Run
 
@@ -32,5 +31,6 @@ Arguments after the model path are optional. Defaults are width `64`, height
 - `rule.rs` parses patterns, expands symmetries, finds matches, and applies rules.
 - `node.rs` runs rule nodes and branch nodes.
 - `path.rs` finds and paints grid paths.
+- `convolution.rs` applies local-neighbor count rules.
 - `model.rs` loads XML and exposes the simulation API.
 - `main.rs` provides the text-output CLI.

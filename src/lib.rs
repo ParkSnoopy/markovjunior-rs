@@ -1,5 +1,6 @@
 //! A small `MarkovJunior` rewrite engine.
 
+mod convolution;
 mod error;
 mod grid;
 mod model;
