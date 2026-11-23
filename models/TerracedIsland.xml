@@ -1,18 +1,13 @@
-<sequence values="OHGSBF" origin="true">
-  <!-- Grow outward from one summit; each pass leaves a lower contour. -->
-  <one in="HO" out="HH" steps="45"/>
-  <convolution neighborhood="Moore" steps="1" in="O" out="G" values="H" sum="1..8"/>
-  <convolution neighborhood="Moore" steps="2" in="O" out="G" values="G" sum="1..8" p="0.87"/>
-  <convolution neighborhood="Moore" steps="1" in="O" out="S" values="G" sum="1..8"/>
-  <convolution neighborhood="Moore" steps="2" in="O" out="S" values="S" sum="1..8" p="0.85"/>
-  <convolution neighborhood="Moore" steps="1" in="O" out="B" values="S" sum="1..8"/>
-  <convolution neighborhood="Moore" steps="1" in="S" out="F" values="S" sum="5..8" p="0.12"/>
-  <map scale="1 1 9" values=".WBRGLT">
-    <rule in="O" out="W W"/>
-    <rule in="B" out="B B R"/>
-    <rule in="S" out="G B B R"/>
-    <rule in="F" out="L L T G B B R"/>
-    <rule in="G" out="G R R R B R"/>
-    <rule in="H" out="R R R R R R B R"/>
-  </map>
+<sequence values=".RWGBL" origin="true" symmetry="(xy)">
+  <union symbol="~" values="RW"/>
+  <one in="R ." out=". R"/>
+  <prl in="~." out="*W"/>
+  <!-- A connected shore grows out of one rock in the water plane. -->
+  <one in="RW" out="*R" steps="45"/>
+  <prl in="RW" out="*R" p="0.35" steps="14"/>
+  <!-- Deposit only over a supported patch. Narrow peninsulas cannot rise as high as broad interiors. -->
+  <prl in="***/**./*** **R/*RR/**R" out="***/**R/*** ***/***/***" p="0.55" steps="10"/>
+  <prl in=". R" out="* G"/>
+  <prl in="WG" out="*B"/>
+  <prl in=". G" out="L *" p="0.08" steps="1"/>
 </sequence>

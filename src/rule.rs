@@ -12,6 +12,7 @@ pub struct Rule {
     output: Vec<Option<char>>,
     width: usize,
     height: usize,
+    depth: usize,
     probability: f64,
 }
 
@@ -23,9 +24,9 @@ impl Rule {
         let output = xml
             .attribute("out")
             .ok_or_else(|| error("rule is missing 'out'"))?;
-        let input_rows = parse_pattern(input)?;
-        let output_rows = parse_pattern(output)?;
-        if input_rows.len() != output_rows.len() || input_rows[0].len() != output_rows[0].len() {
+        let (input_rows, shape) = parse_volume(input, grid.depth > 1)?;
+        let (output_rows, output_shape) = parse_volume(output, grid.depth > 1)?;
+        if shape != output_shape {
             return Err(error(
                 "input and output patterns must have the same dimensions",
             ));
@@ -41,8 +42,7 @@ impl Rule {
         {
             return Err(error("rule contains a symbol not declared by grid values"));
         }
-        let width = input_rows[0].len();
-        let height = input_rows.len();
+        let [width, height, depth] = shape;
         let input = input_rows
             .into_iter()
             .flatten()
@@ -66,6 +66,7 @@ impl Rule {
             output,
             width,
             height,
+            depth,
             probability,
         })
     }
@@ -88,12 +89,15 @@ impl Rule {
     fn rotate(&self) -> Self {
         let mut input = vec![0; self.input.len()];
         let mut output = vec![None; self.output.len()];
-        for y in 0..self.width {
-            for x in 0..self.height {
-                let source = self.width - 1 - y + x * self.width;
-                let target = x + y * self.height;
-                input[target] = self.input[source];
-                output[target] = self.output[source];
+        for z in 0..self.depth {
+            let base = z * self.width * self.height;
+            for y in 0..self.width {
+                for x in 0..self.height {
+                    let source = self.width - 1 - y + x * self.width;
+                    let target = x + y * self.height;
+                    input[base + target] = self.input[base + source];
+                    output[base + target] = self.output[base + source];
+                }
             }
         }
         Self {
@@ -101,13 +105,14 @@ impl Rule {
             output,
             width: self.height,
             height: self.width,
+            depth: self.depth,
             probability: self.probability,
         }
     }
 
     fn reflected(&self) -> Self {
         let mut reflected = self.clone();
-        for y in 0..self.height {
+        for y in 0..self.height * self.depth {
             for x in 0..self.width {
                 let source = self.width - 1 - x + y * self.width;
                 let target = x + y * self.width;
@@ -118,21 +123,22 @@ impl Rule {
         reflected
     }
 
-    fn matches(&self, grid: &Grid, x: usize, y: usize) -> bool {
-        (0..self.height).all(|dy| {
-            (0..self.width).all(|dx| {
-                let value = grid.cells[x + dx + (y + dy) * grid.width];
-                self.input[dx + dy * self.width] & (1_u16 << value) != 0
+    fn positions(&self, start: usize, row: usize, plane: usize) -> impl Iterator<Item = usize> {
+        (0..self.depth).flat_map(move |z| {
+            (0..self.height).flat_map(move |y| {
+                let first = start + z * plane + y * row;
+                first..first + self.width
             })
         })
     }
 
-    fn apply(&self, grid: &mut Grid, x: usize, y: usize) {
-        for dy in 0..self.height {
-            for dx in 0..self.width {
-                if let Some(symbol) = self.output[dx + dy * self.width] {
-                    grid.cells[x + dx + (y + dy) * grid.width] = grid.indices[&symbol];
-                }
+    fn apply(&self, grid: &mut Grid, start: usize) {
+        for (pos, symbol) in self
+            .positions(start, grid.width, grid.width * grid.height)
+            .zip(&self.output)
+        {
+            if let Some(symbol) = symbol {
+                grid.cells[pos] = grid.indices[symbol];
             }
         }
     }
@@ -165,6 +171,32 @@ fn push_unique(rules: &mut Vec<Rule>, candidate: Rule) {
     }
 }
 
+type PatternRows = Vec<Vec<char>>;
+
+fn parse_volume(source: &str, volume: bool) -> Result<(PatternRows, [usize; 3]), ModelError> {
+    if !volume {
+        let rows = parse_pattern(source)?;
+        let shape = [rows[0].len(), rows.len(), 1];
+        return Ok((rows, shape));
+    }
+    let mut rows = Vec::new();
+    let mut shape = [0; 3];
+    for layer in source.split_whitespace().rev() {
+        let slice = parse_pattern(layer)?;
+        let plane = [slice[0].len(), slice.len()];
+        if shape[2] != 0 && shape[..2] != plane {
+            return Err(error("inconsistent pattern layers"));
+        }
+        shape[..2].copy_from_slice(&plane);
+        shape[2] += 1;
+        rows.extend(slice);
+    }
+    if rows.is_empty() {
+        return Err(error("empty volume pattern"));
+    }
+    Ok((rows, shape))
+}
+
 fn parse_pattern(source: &str) -> Result<Vec<Vec<char>>, ModelError> {
     let rows: Vec<Vec<char>> = source
         .split('/')
@@ -180,42 +212,43 @@ fn parse_pattern(source: &str) -> Result<Vec<Vec<char>>, ModelError> {
     Ok(rows)
 }
 
-pub fn apply_one<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R) -> bool {
+fn candidates<'a>(rules: &'a [Rule], grid: &Grid) -> Vec<(&'a Rule, usize)> {
     let mut matches = Vec::new();
+    let plane = grid.width * grid.height;
     for rule in rules {
-        if rule.width > grid.width || rule.height > grid.height {
+        if rule.width > grid.width || rule.height > grid.height || rule.depth > grid.depth {
             continue;
         }
-        for y in 0..=grid.height - rule.height {
-            for x in 0..=grid.width - rule.width {
-                if rule.matches(grid, x, y) {
-                    matches.push((rule, x, y));
+        for z in 0..=grid.depth - rule.depth {
+            for y in 0..=grid.height - rule.height {
+                for x in 0..=grid.width - rule.width {
+                    let start = x + y * grid.width + z * plane;
+                    if rule
+                        .positions(start, grid.width, plane)
+                        .zip(&rule.input)
+                        .all(|(pos, mask)| mask & (1 << grid.cells[pos]) != 0)
+                    {
+                        matches.push((rule, start));
+                    }
                 }
             }
         }
     }
+    matches
+}
+
+pub fn apply_one<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R) -> bool {
+    let matches = candidates(rules, grid);
     if matches.is_empty() {
         return false;
     }
-    let (rule, x, y) = matches[rng.gen_range(0..matches.len())];
-    rule.apply(grid, x, y);
+    let (rule, start) = matches[rng.gen_range(0..matches.len())];
+    rule.apply(grid, start);
     true
 }
 
 pub fn apply_all<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R, parallel: bool) -> bool {
-    let mut candidates = Vec::new();
-    for rule in rules {
-        if rule.width > grid.width || rule.height > grid.height {
-            continue;
-        }
-        for y in 0..=grid.height - rule.height {
-            for x in 0..=grid.width - rule.width {
-                if rule.matches(grid, x, y) {
-                    candidates.push((rule, x, y));
-                }
-            }
-        }
-    }
+    let mut candidates = candidates(rules, grid);
     if candidates.is_empty() {
         return false;
     }
@@ -225,13 +258,12 @@ pub fn apply_all<R: Rng>(rules: &[Rule], grid: &mut Grid, rng: &mut R, parallel:
     let mut reserved = vec![false; grid.cells.len()];
     let mut writes = Vec::new();
     let mut applied = false;
-    for (rule, x, y) in candidates {
+    for (rule, start) in candidates {
         if parallel && rng.gen_range(0.0..1.0) > rule.probability {
             continue;
         }
-        let grid_width = grid.width;
-        let positions: Vec<usize> = (0..rule.height)
-            .flat_map(|dy| (0..rule.width).map(move |dx| x + dx + (y + dy) * grid_width))
+        let positions: Vec<usize> = rule
+            .positions(start, grid.width, grid.width * grid.height)
             .collect();
         let output_positions: Vec<usize> = positions
             .iter()

@@ -1,4 +1,4 @@
-//! Export three voxel models and illustrate their geometry one z layer at a time.
+//! Export three voxel models and render sampled interpreter states.
 
 mod common;
 
@@ -18,39 +18,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         (
             "courtyard",
             include_str!("../models/Courtyard.xml"),
-            [23, 17, 1],
-            &[
-                [158, 155, 146],
-                [239, 220, 187],
-                [71, 145, 165],
-                [107, 82, 57],
-                [109, 158, 106],
-            ][..],
+            [27, 21, 18],
+            &[[227, 150, 79], [239, 220, 187], [71, 145, 165]][..],
         ),
         (
             "frame-cube",
             include_str!("../models/FrameCube.xml"),
-            [11, 11, 11],
-            &[[89, 190, 183], [255, 202, 119], [100, 151, 186]][..],
+            [13, 13, 13],
+            &[[255, 202, 119], [89, 190, 183]][..],
         ),
         (
             "terraced-island",
             include_str!("../models/TerracedIsland.xml"),
-            [35, 29, 1],
+            [35, 29, 12],
             &[
-                [67, 155, 186],
-                [231, 203, 148],
                 [164, 153, 137],
+                [67, 155, 186],
                 [138, 189, 107],
+                [231, 203, 148],
                 [58, 127, 94],
-                [110, 79, 56],
             ][..],
         ),
     ] {
         let mut model = Model::from_xml_3d(xml, width, height, depth)?;
-        let turns = model.run(10_000, &mut StdRng::seed_from_u64(seed));
-        if turns == 10_000 {
-            return Err(format!("{name} did not finish").into());
+        let mut rng = StdRng::seed_from_u64(seed);
+        let mut turns = 0;
+        let mut frames = vec![volume_frame(model.grid())?];
+        let stride = if name == "frame-cube" { 6 } else { 2 };
+        loop {
+            let advanced = model.run(stride, &mut rng);
+            if advanced != 0 {
+                frames.push(volume_frame(model.grid())?);
+            }
+            turns += advanced;
+            if advanced < stride {
+                break;
+            }
+            if turns >= 10_000 {
+                return Err(format!("{name} did not finish").into());
+            }
         }
         let base = Path::new(&directory).join(name);
         let grid = model.grid();
@@ -58,7 +64,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             base.with_extension("vox"),
             grid.to_vox_with_palette(colors)?,
         )?;
-        preview(&base.with_extension("gif"), grid, colors)?;
+        animation(&base.with_extension("gif"), colors, frames)?;
+        if name == "courtyard" {
+            building_samples(
+                &directory.join("buildings-10.gif"),
+                xml,
+                [width, height, depth],
+                colors,
+                seed,
+            )?;
+        }
         writeln!(
             std::io::stdout(),
             "{name}: {} × {} × {}, {turns} turns",
@@ -68,6 +83,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         )?;
     }
     growth_pair(&directory, seed)
+}
+
+fn building_samples(
+    path: &Path,
+    xml: &str,
+    [w, h, d]: [usize; 3],
+    colors: &[[u8; 3]],
+    seed: u64,
+) -> Result<(), Box<dyn Error>> {
+    let width = WIDTH * 5;
+    let height = HEIGHT * 2;
+    let mut sheet = vec![0; usize::from(width) * usize::from(height)];
+    for i in 0..10 {
+        let mut model = Model::from_xml_3d(xml, w, h, d)?;
+        if model.run(
+            1000,
+            &mut StdRng::seed_from_u64(seed.wrapping_add(i as u64)),
+        ) == 1000
+        {
+            return Err("building did not finish".into());
+        }
+        for (y, row) in volume_frame(model.grid())?
+            .chunks_exact(usize::from(WIDTH))
+            .enumerate()
+        {
+            let start =
+                (i / 5 * usize::from(HEIGHT) + y) * usize::from(width) + i % 5 * usize::from(WIDTH);
+            sheet[start..start + row.len()].copy_from_slice(row);
+        }
+    }
+    let mut encoder = Encoder::new(fs::File::create(path)?, width, height, &palette(colors))?;
+    encoder.write_frame(&Frame {
+        width,
+        height,
+        buffer: sheet.into(),
+        ..Frame::default()
+    })?;
+    encoder.into_inner()?.flush()?;
+    Ok(())
 }
 
 fn growth_pair(directory: &Path, seed: u64) -> Result<(), Box<dyn Error>> {
@@ -99,7 +153,7 @@ fn growth_pair(directory: &Path, seed: u64) -> Result<(), Box<dyn Error>> {
                     }
                 }
             } else {
-                draw_volume(grid, &mut pixels, |_| {})?;
+                pixels = volume_frame(grid)?;
             }
             frames.push(pixels);
         }
@@ -112,19 +166,8 @@ fn background() -> Vec<u8> {
     vec![0; usize::from(WIDTH) * usize::from(HEIGHT)]
 }
 
-fn preview(path: &Path, grid: &Grid, colors: &[[u8; 3]]) -> Result<(), Box<dyn Error>> {
-    let mut frames = Vec::new();
-    draw_volume(grid, &mut background(), |pixels| {
-        frames.push(pixels.to_vec());
-    })?;
-    animation(path, colors, frames)
-}
-
-fn draw_volume(
-    grid: &Grid,
-    pixels: &mut [u8],
-    mut layer_done: impl FnMut(&[u8]),
-) -> Result<(), Box<dyn Error>> {
+fn volume_frame(grid: &Grid) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut pixels = background();
     let (width, height, depth) = (
         grid.width() as i32,
         grid.height() as i32,
@@ -161,39 +204,34 @@ fn draw_volume(
                 }
             }
         }
-        if layer.iter().any(|&v| v != 0) {
-            layer_done(pixels);
-        }
     }
-    Ok(())
+    Ok(pixels)
 }
 
-fn animation(
-    path: &Path,
-    colors: &[[u8; 3]],
-    mut frames: Vec<Vec<u8>>,
-) -> Result<(), Box<dyn Error>> {
-    let mut palette = vec![22, 31, 40];
-    for color in colors {
-        for light in [100_u16, 79, 62] {
-            palette.extend(color.map(|c| (u16::from(c) * light / 100) as u8));
-        }
-    }
-    if frames.is_empty() {
-        return Err("gallery volume is empty".into());
-    }
-    frames.rotate_right(1);
+fn animation(path: &Path, colors: &[[u8; 3]], frames: Vec<Vec<u8>>) -> Result<(), Box<dyn Error>> {
+    let palette = palette(colors);
+    let last = frames.len().checked_sub(1).ok_or("no frames")?;
     let mut encoder = Encoder::new(fs::File::create(path)?, WIDTH, HEIGHT, &palette)?;
     encoder.set_repeat(Repeat::Infinite)?;
     for (i, buffer) in frames.into_iter().enumerate() {
         encoder.write_frame(&Frame {
             width: WIDTH,
             height: HEIGHT,
-            delay: if i == 0 { 160 } else { 18 },
+            delay: if i == last { 160 } else { 18 },
             buffer: buffer.into(),
             ..Frame::default()
         })?;
     }
     encoder.into_inner()?.flush()?;
     Ok(())
+}
+
+fn palette(colors: &[[u8; 3]]) -> Vec<u8> {
+    let mut palette = vec![22, 31, 40];
+    for color in colors {
+        for light in [100_u16, 79, 62] {
+            palette.extend(color.map(|c| (u16::from(c) * light / 100) as u8));
+        }
+    }
+    palette
 }

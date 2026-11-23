@@ -43,7 +43,11 @@ impl Node {
         grid: &Grid,
         parent_symmetry: [bool; 8],
     ) -> Result<Self, ModelError> {
-        if grid.depth > 1 && !matches!(xml.tag_name().name(), "convolution" | "sequence" | "markov")
+        if grid.depth > 1
+            && !matches!(
+                xml.tag_name().name(),
+                "convolution" | "sequence" | "markov" | "one" | "all" | "prl"
+            )
         {
             return Err(error(format!(
                 "unsupported 3D node '{}'",
@@ -69,6 +73,16 @@ impl Node {
                 };
                 let mut rules = Vec::new();
                 for rule_xml in rule_nodes {
+                    if grid.depth > 1
+                        && !matches!(
+                            rule_xml.ancestors().find_map(|n| n.attribute("symmetry")),
+                            Some("()" | "(xy)")
+                        )
+                    {
+                        return Err(error(
+                            "3D patterns require explicit symmetry='()' or '(xy)'; full cube symmetry is not supported",
+                        ));
+                    }
                     let rule = Rule::load(rule_xml, grid)?;
                     let symmetry = resolve_symmetry(rule_xml.attribute("symmetry"), node_symmetry)?;
                     rules.extend(rule.symmetries(symmetry));

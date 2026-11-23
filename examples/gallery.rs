@@ -115,12 +115,22 @@ fn render(
     let mut states = vec![model.grid().rows()];
     let mut turns = 0;
     loop {
-        let advanced = model.run(stride, &mut rng);
+        // Don't skip the two River seeds or the turn when the filled grid first becomes water.
+        let batch = if name == "river"
+            && (turns < 2 || turns == usize::from(WIDTH) * usize::from(HEIGHT))
+        {
+            1
+        } else if name == "river" && turns < usize::from(WIDTH) * usize::from(HEIGHT) {
+            stride.min(usize::from(WIDTH) * usize::from(HEIGHT) - turns)
+        } else {
+            stride
+        };
+        let advanced = model.run(batch, &mut rng);
         turns += advanced;
         if advanced != 0 {
             states.push(model.grid().rows());
         }
-        if advanced < stride {
+        if advanced < batch {
             break;
         }
         if turns >= 10_000 {
@@ -128,7 +138,7 @@ fn render(
         }
     }
     let path = directory.join(format!("{name}.gif"));
-    states.rotate_right(1); // Static previews show the finished map.
+
     write_animation(
         &path,
         &states,
@@ -175,7 +185,7 @@ fn write_animation(
         encoder.write_frame(&Frame {
             width: WIDTH * SCALE,
             height: HEIGHT * SCALE,
-            delay: if i == 0 { 150 } else { delay },
+            delay: if i + 1 == states.len() { 150 } else { delay },
             buffer: pixels.into(),
             ..Frame::default()
         })?;

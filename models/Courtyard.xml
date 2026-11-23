@@ -1,24 +1,18 @@
-<sequence values="BPRTCGDF">
-  <!-- Trace the pavement, facade and three-cell-wide gallery around an open court. -->
-  <convolution neighborhood="VonNeumann" steps="1" in="B" out="P" values="B" sum="2..3"/>
-  <convolution neighborhood="VonNeumann" steps="1" in="B" out="R" values="P" sum="1..2"/>
-  <convolution neighborhood="VonNeumann" steps="1" in="B" out="T" values="R" sum="1..2"/>
-  <convolution neighborhood="VonNeumann" steps="2" in="B" out="T" values="T" sum="1..2"/>
-  <convolution neighborhood="VonNeumann" steps="1" in="R" out="C" values="P" sum="2"/>
-  <prl in="CRRR" out="*GGC"/>
-  <one in="PGT" out="*D*" steps="1"/>
-  <!-- Recess groups of neighboring window bays to make open roof terraces. -->
-  <one in="CGG" out="*RR" steps="5"/>
-  <one in="BBB/BBB/BBB" out="***/*F*/***" steps="3"/>
-  <!-- Output stacks are written roof first, foundation last. -->
-  <map values=".SWGTL" scale="1 1 11">
-    <rule in="P" out="S"/>
-    <rule in="B" out="L"/>
-    <rule in="F" out="L L T L"/>
-    <rule in="C" out="W W W W W W W W W W S"/>
-    <rule in="G" out="W G G W G G W G G W S"/>
-    <rule in="R" out="W G G W G G W S"/>
-    <rule in="D" out="W G G W G G W . . . S"/>
-    <rule in="T" out="S . . S . . S . . . S"/>
-  </map>
+<sequence values=".RSG" origin="true" symmetry="(xy)">
+  <!-- Lower the first room site until exactly one layer fits beneath it. -->
+  <one in="R . ." out=". R *"/>
+  <!-- Place one bay. G is a connection point in a wall; R is an open roof site. -->
+  <one in=".../.../... .../.R./... .../.../..." out="SSS/SRS/SSS SGS/G.G/SGS SSS/SSS/SSS"/>
+  <!-- Grow wings: one wall and a vacant volume permit a whole new room or long hall.
+       Open a doorway through the shared wall as the new bay attaches. -->
+  <one steps="12">
+    <rule in="*.../*.../*... *.../G.../*... *.../*.../*..." out="*SSS/*SRS/*SSS *SGS/...G/*SGS *SSS/*SSS/*SSS"/>
+    <rule in="*....../*....../*...... *....../G....../*...... *....../*....../*......" out="*SSSSSS/*SRSSRS/*SSSSSS *SGSSGS/......G/*SGSSGS *SSSSSS/*SSSSSS/*SSSSSS"/>
+  </one>
+  <!-- Each exposed roof can support another storey, or close as a terrace.
+       The same rule can act on its own new roof. No height map is supplied. -->
+  <one>
+    <rule in=".../.../... .../.../... .../.../... ***/*R*/***" out="SSS/SRS/SSS SGS/G.G/SGS SSS/SSS/SSS ***/*S*/***"/>
+    <rule in="R" out="S"/>
+  </one>
 </sequence>
