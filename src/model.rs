@@ -12,6 +12,7 @@ use crate::{
 pub struct Model {
     grid: Grid,
     root: Node,
+    finished: bool,
 }
 
 impl Model {
@@ -42,14 +43,19 @@ impl Model {
         Ok(Self {
             grid,
             root: root_node,
+            finished: false,
         })
     }
 
     /// Runs the model for at most `steps` rewrite turns.
     pub fn run<R: Rng>(&mut self, steps: usize, rng: &mut R) -> usize {
         let mut completed = 0;
-        while completed < steps && self.root.tick(&mut self.grid, rng) {
-            completed += 1;
+        while completed < steps && !self.finished {
+            if self.root.tick(&mut self.grid, rng) {
+                completed += 1;
+            } else {
+                self.finished = true;
+            }
         }
         completed
     }

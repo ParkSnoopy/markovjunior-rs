@@ -1,0 +1,10 @@
+<sequence values=".FCH">
+  <!-- Corners have three face neighbors; edge voxels have four. -->
+  <convolution neighborhood="VonNeumann" steps="1">
+    <rule in="." out="C" values="." sum="3"/>
+    <rule in="." out="F" values="." sum="4"/>
+  </convolution>
+  <!-- Pick joints along the beams and grow short braces into the faces. -->
+  <convolution neighborhood="VonNeumann" steps="1" in="F" out="H" values="F" sum="2" p="0.10"/>
+  <convolution neighborhood="VonNeumann" steps="2" in="." out="H" values="H" sum="1..2" p="0.62"/>
+</sequence>

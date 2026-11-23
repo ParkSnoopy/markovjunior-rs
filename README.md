@@ -28,14 +28,33 @@ A `<sequence>` runs its children in order: once a stage finishes, the next one t
 
 **Rooms and mazes — nest the two.** A sequence places rooms and uses a Markov node to carve corridors in the gaps. A second Markov node marks reachable floor; when marking stalls, it opens a wall into a new region and resumes marking. The final stages add loops and trim dead ends.
 
-Run River as text, or regenerate all six gallery GIFs (41 × 33 cells, seed `3` for River and `7` for the others):
+Run River as text, or generate six new gallery GIFs (41 × 33 cells):
 
 ```sh
-cargo run --locked -- models/River.xml --width 41 --height 33 --seed 3
+cargo run --locked -- models/River.xml --width 41 --height 33
 cargo run --locked --example gallery -- assets
 ```
 
+The CLI and both galleries pick a fresh seed on each run and print it to stderr. Append `--seed N` to replay a result with the same model and dimensions. The images here are saved samples, not live renders. Gallery commands replace their output files; choose another directory instead of `assets` to keep a variation.
+
+Seeds for the samples shown here: `1414196453300954813` for `gallery`, `7712408619116528968` for `voxel_gallery` (including the growth pair).
+
 These six XML models are from [Maxim Gumin’s original collection](https://github.com/mxgmn/MarkovJunior/tree/42aaf24bcf54ae164fba49c0a59348297904a676/models) ([MIT license](LICENSE)). The gallery uses local copies; no upstream checkout is needed.
+
+## Voxel structures
+
+| [Courtyard building](models/Courtyard.xml) | [Open-frame cube](models/FrameCube.xml) | [Terraced island](models/TerracedIsland.xml) |
+| :---: | :---: | :---: |
+| ![Three storeys of windows and columns around an open courtyard](assets/courtyard.gif) | ![Twelve beams meet at eight gold corners around an empty volume](assets/frame-cube.gif) | ![Water surrounds a sandy shore, wooded terraces, and a rocky summit](assets/terraced-island.gif) |
+| [Building .vox](assets/courtyard.vox) | [Cube .vox](assets/frame-cube.vox) | [Island .vox](assets/terraced-island.vox) |
+
+The building varies its doorway, courtyard planting, and recessed window bays. The cube keeps its eight corners and twelve beams but grows short braces from randomly chosen joints. The island grows outward from a summit, then maps each terrain band to a different column height.
+
+Open the `.vox` files in MagicaVoxel to inspect the structures from any angle. The previews reveal the finished geometry one layer at a time. To regenerate the three colored models and their previews:
+
+```sh
+cargo run --locked --example voxel_gallery -- assets
+```
 
 ## The same growth rule in 2D and 3D
 
@@ -44,7 +63,7 @@ These six XML models are from [Maxim Gumin’s original collection](https://gith
 | ![Planar growth spreading outward from one occupied cell](assets/growth-2d.gif) | ![Voxel growth spreading above, below, and around the center](assets/growth-3d.gif) |
 
 Both animations run `models/VoxelGrowth.xml` from a single occupied cell for
-14 steps with seed `7`. On each step, an empty cell with one or two occupied
+up to 14 steps using the same run seed. The voxel gallery regenerates this pair along with the structures. On each step, an empty cell with one or two occupied
 face neighbors has a 65% chance to fill. The only change between runs is the
 depth: `1` on the left, `31` on the right.
 
@@ -61,21 +80,22 @@ Declare a union inside a `sequence` or `markov` node. For example,
 
 3D grids support `convolution` with `VonNeumann` (face neighbors) or
 `NoCorners` (faces and edges), alone or inside `sequence` and `markov`.
+For footprint-based models, a top-level 2D `sequence` can end with a `<map scale="1 1 N">` whose inline rules replace a single cell with a vertical column. Output layers are written top to bottom; `*` leaves a layer unchanged.
 3D pattern rewrites and paths are not yet supported. Other missing features
-include inference, fields, map nodes, convchain, WFC, image or voxel rule
+include inference, fields, general map nodes, convchain, WFC, image or voxel rule
 inputs, graphical rendering, and the upstream multi-model runner.
 
 ## Run
 
 ```sh
-cargo run --locked -- models/VoxelGrowth.xml --width 31 --height 31 --depth 31 --steps 14 --seed 7 --vox growth.vox
+cargo run --locked -- models/VoxelGrowth.xml --width 31 --height 31 --depth 31 --steps 14 --vox growth.vox
 ```
 
 Open `growth.vox` in MagicaVoxel. Choose a new output filename for each run;
 the CLI does not overwrite existing files. The first symbol in `values` is
 empty space; the remaining symbols use consecutive default palette entries.
 VOX output supports up to 256 cells on each axis. Omit `--vox` for text output.
-Defaults are width `64`, height `64`, depth `1` (2D), steps `10000`, and seed `0`.
+Defaults are width `64`, height `64`, depth `1` (2D), and steps `10000`. Seed `0` is a valid explicit replay seed.
 
 ## Code layout
 

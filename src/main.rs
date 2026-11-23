@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut depth = 1;
     let mut vox = None;
     let mut steps = 10_000;
-    let mut seed = 0_u64;
+    let mut seed = None;
     while let Some(option) = arguments.next() {
         let value = arguments
             .next()
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--depth" => depth = value.parse()?,
             "--vox" => vox = Some(PathBuf::from(value)),
             "--steps" => steps = value.parse()?,
-            "--seed" => seed = value.parse()?,
+            "--seed" => seed = Some(value.parse()?),
             _ => return Err(format!("unknown option {option}").into()),
         }
     }
@@ -44,6 +44,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Err("VOX supports at most 256 cells per axis".into());
     }
     let mut model = Model::from_xml_3d(&xml, width, height, depth)?;
+    let seed = seed.unwrap_or_else(rand::random);
+    writeln!(io::stderr(), "seed: {seed}")?;
     let mut rng = StdRng::seed_from_u64(seed);
     let completed = model.run(steps, &mut rng);
     let mut output = io::BufWriter::new(io::stdout().lock());

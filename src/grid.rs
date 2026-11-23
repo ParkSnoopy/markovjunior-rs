@@ -92,6 +92,11 @@ impl Grid {
         self.height
     }
 
+    /// Iterates bottom-to-top z layers of row-major indices into the grid's alphabet.
+    pub fn layers(&self) -> impl ExactSizeIterator<Item = &[u8]> {
+        self.cells.chunks_exact(self.width * self.height)
+    }
+
     /// Returns the grid as rows of symbols, one z layer after another.
     #[must_use]
     pub fn rows(&self) -> Vec<String> {

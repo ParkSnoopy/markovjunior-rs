@@ -4,6 +4,49 @@ use markovjunior_rs::Model;
 use rand::{SeedableRng, rngs::StdRng};
 
 #[test]
+fn cube_seed_changes_geometry_and_replays_it() -> Result<(), Box<dyn std::error::Error>> {
+    let occupancy = |seed| -> Result<Vec<bool>, markovjunior_rs::ModelError> {
+        let mut model = Model::from_xml_3d(include_str!("../models/FrameCube.xml"), 11, 11, 11)?;
+        model.run(10, &mut StdRng::seed_from_u64(seed));
+        Ok(model.grid().layers().flatten().map(|&v| v != 0).collect())
+    };
+    let original = occupancy(0)?;
+    if original != occupancy(0)? || original == occupancy(1)? {
+        return Err(
+            "expected the same seed to replay braces and different seeds to move them".into(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn column_map_overlays_vertical_patterns_and_stays_finished()
+-> Result<(), Box<dyn std::error::Error>> {
+    let xml = "<sequence values='AB' origin='true'><map values='.XY' scale='1 1 3'><rule in='*' out='X'/><rule in='B' out='Y . *'/></map></sequence>";
+    let mut model = Model::from_xml(xml, 3, 1)?;
+    let mut rng = StdRng::seed_from_u64(7);
+    if model.run(1, &mut rng) != 1
+        || model.run(10, &mut rng) != 0
+        || model.run(10, &mut rng) != 0
+        || model.grid().rows() != ["XXX", "...", ".Y."]
+    {
+        return Err("incorrect map transition or layer order".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn unsupported_map_geometry_does_not_silently_flatten() {
+    for map in [
+        "<map scale='2 1 2' values='.W'/>",
+        "<map scale='1 1 2' values='.W'><rule in='A' out='W W W'/></map>",
+        "<map scale='1 1 2' values='.W'/><one in='A' out='A'/>",
+    ] {
+        assert!(Model::from_xml(&format!("<sequence values='A'>{map}</sequence>"), 2, 2).is_err());
+    }
+}
+
+#[test]
 fn volume_exports_only_the_selected_neighbors() -> Result<(), Box<dyn std::error::Error>> {
     for (kernel, radius) in [("VonNeumann", 1), ("NoCorners", 2)] {
         let xml = format!(

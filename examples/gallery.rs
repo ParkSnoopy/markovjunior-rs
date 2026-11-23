@@ -1,5 +1,7 @@
 //! Render the README's rewrite examples from live model states.
 
+mod common;
+
 use std::{
     error::Error,
     fs::File,
@@ -16,9 +18,7 @@ const HEIGHT: u16 = 33;
 const SCALE: u16 = 8;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let directory = std::env::args_os()
-        .nth(1)
-        .unwrap_or_else(|| "assets".into());
+    let (directory, seed) = common::gallery_options()?;
     std::fs::create_dir_all(&directory)?;
     for (name, xml, stride, symbols, colors) in [
         (
@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             ][..],
         ),
     ] {
-        render(Path::new(&directory), name, xml, stride, symbols, colors)?;
+        render(&directory, name, xml, stride, symbols, colors, seed)?;
     }
     Ok(())
 }
@@ -108,10 +108,10 @@ fn render(
     stride: usize,
     symbols: &str,
     colors: &[[u8; 3]],
+    seed: u64,
 ) -> Result<(), Box<dyn Error>> {
     let mut model = Model::from_xml(xml, WIDTH.into(), HEIGHT.into())?;
-    // Show a river that crosses the view rather than clipping one corner.
-    let mut rng = StdRng::seed_from_u64(if name == "river" { 3 } else { 7 });
+    let mut rng = StdRng::seed_from_u64(seed);
     let mut states = vec![model.grid().rows()];
     let mut turns = 0;
     loop {
