@@ -14,14 +14,28 @@ This Rust port of [MarkovJunior](https://github.com/mxgmn/MarkovJunior) generate
 
 **Cave.** The generator scatters noise, then each cell counts its eight neighbors. Dense patches survive while isolated squares disappear; a final rule cleans up diagonal contacts.
 
-Run the maze as text, or regenerate all three GIFs (41 × 33 cells, seed `7`):
+## Combining rulenodes
+
+A `<sequence>` runs its children in order: once a stage finishes, the next one takes over its grid. A `<markov>` checks its children from the top on each turn, so a later rule can make an earlier one applicable again.
+
+| [River](models/River.xml) | [Flowers](models/Flowers.xml) | [Rooms and mazes](models/NystromDungeon.xml) |
+| :---: | :---: | :---: |
+| ![Two regions meet, their boundary turns blue, and vegetation fills both banks](assets/river.gif) | ![Green stems branch above the soil and yellow flowers open at their tips](assets/flowers.gif) | ![Rooms appear on a lattice, corridors join them, and dead ends recede](assets/rooms-and-mazes.gif) |
+
+**River — build in stages.** Two seeds compete for space. The next stage turns their shared border into water and clears the rest of the grid. Grass spreads from the banks while forests expand from scattered seeds.
+
+**Flowers — return to an earlier rule.** The first child of a `<markov>` grows, branches, or blooms an existing shoot. Only when none of those moves fits does the second child plant a new shoot. On the next turn the growth rules get first chance again.
+
+**Rooms and mazes — nest the two.** A sequence places rooms and uses a Markov node to carve corridors in the gaps. A second Markov node marks reachable floor; when marking stalls, it opens a wall into a new region and resumes marking. The final stages add loops and trim dead ends.
+
+Run River as text, or regenerate all six gallery GIFs (41 × 33 cells, seed `3` for River and `7` for the others):
 
 ```sh
-cargo run --locked -- models/MazeBacktracker.xml --width 41 --height 33 --seed 7
+cargo run --locked -- models/River.xml --width 41 --height 33 --seed 3
 cargo run --locked --example gallery -- assets
 ```
 
-The three XML models are from [Maxim Gumin’s original collection](https://github.com/mxgmn/MarkovJunior/tree/42aaf24bcf54ae164fba49c0a59348297904a676/models) ([MIT license](LICENSE)). The gallery uses local copies; no upstream checkout is needed.
+These six XML models are from [Maxim Gumin’s original collection](https://github.com/mxgmn/MarkovJunior/tree/42aaf24bcf54ae164fba49c0a59348297904a676/models) ([MIT license](LICENSE)). The gallery uses local copies; no upstream checkout is needed.
 
 ## The same growth rule in 2D and 3D
 

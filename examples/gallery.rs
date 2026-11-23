@@ -1,4 +1,4 @@
-//! Render the README's three rewrite examples from live model states.
+//! Render the README's rewrite examples from live model states.
 
 use std::{
     error::Error,
@@ -54,39 +54,93 @@ fn main() -> Result<(), Box<dyn Error>> {
             "DA",
             &[[28, 39, 57], [160, 201, 216]][..],
         ),
+        (
+            "river",
+            include_str!("../models/River.xml"),
+            32,
+            "BWRUGE",
+            &[
+                [32, 43, 57],
+                [224, 211, 162],
+                [179, 126, 98],
+                [79, 168, 218],
+                [164, 201, 115],
+                [56, 116, 84],
+            ][..],
+        ),
+        (
+            "flowers",
+            include_str!("../models/Flowers.xml"),
+            2,
+            "NGUEPY",
+            &[
+                [67, 48, 52],
+                [117, 167, 90],
+                [39, 58, 88],
+                [79, 183, 130],
+                [239, 139, 165],
+                [255, 208, 112],
+            ][..],
+        ),
+        (
+            "rooms-and-mazes",
+            include_str!("../models/NystromDungeon.xml"),
+            8,
+            "BPWRG",
+            &[
+                [26, 34, 44],
+                [93, 107, 125],
+                [236, 210, 169],
+                [240, 135, 78],
+                [79, 166, 146],
+            ][..],
+        ),
     ] {
-        let mut model = Model::from_xml(xml, WIDTH.into(), HEIGHT.into())?;
-        let mut rng = StdRng::seed_from_u64(7);
-        let mut states = vec![model.grid().rows()];
-        let mut turns = 0;
-        loop {
-            let advanced = model.run(stride, &mut rng);
-            turns += advanced;
-            if advanced != 0 {
-                states.push(model.grid().rows());
-            }
-            if advanced < stride {
-                break;
-            }
-            if turns >= 10_000 {
-                return Err(format!("{name} did not finish").into());
-            }
-        }
-        let path = Path::new(&directory).join(format!("{name}.gif"));
-        states.rotate_right(1); // Static previews show the finished map.
-        write_animation(
-            &path,
-            &states,
-            symbols,
-            colors,
-            if name == "cave" { 18 } else { 9 },
-        )?;
-        writeln!(
-            std::io::stdout(),
-            "{name}: {turns} turns, {} frames",
-            states.len()
-        )?;
+        render(Path::new(&directory), name, xml, stride, symbols, colors)?;
     }
+    Ok(())
+}
+
+fn render(
+    directory: &Path,
+    name: &str,
+    xml: &str,
+    stride: usize,
+    symbols: &str,
+    colors: &[[u8; 3]],
+) -> Result<(), Box<dyn Error>> {
+    let mut model = Model::from_xml(xml, WIDTH.into(), HEIGHT.into())?;
+    // Show a river that crosses the view rather than clipping one corner.
+    let mut rng = StdRng::seed_from_u64(if name == "river" { 3 } else { 7 });
+    let mut states = vec![model.grid().rows()];
+    let mut turns = 0;
+    loop {
+        let advanced = model.run(stride, &mut rng);
+        turns += advanced;
+        if advanced != 0 {
+            states.push(model.grid().rows());
+        }
+        if advanced < stride {
+            break;
+        }
+        if turns >= 10_000 {
+            return Err(format!("{name} did not finish").into());
+        }
+    }
+    let path = directory.join(format!("{name}.gif"));
+    states.rotate_right(1); // Static previews show the finished map.
+    write_animation(
+        &path,
+        &states,
+        symbols,
+        colors,
+        if name == "cave" { 18 } else { 9 },
+    )?;
+    writeln!(
+        std::io::stdout(),
+        "{name}: {turns} turns, {} frames",
+        states.len()
+    )?;
     Ok(())
 }
 
